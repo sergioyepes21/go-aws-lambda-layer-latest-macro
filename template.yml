@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Transform:
+  - AWS::Serverless-2016-10-31
+Description: The Macro finds a latest Lambda Layer version and returns it on the fragments.
+
+Parameters:
+  MacroName:
+    Description: The name of the Macro
+    Default: "GoLatestLayerVersion"
+    Type: String
+
+Resources:
+  MacroFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Ref MacroName
+      Description: !Sub 'Invoked by CloudFormation when deploying templates using the "${MacroName}" custom macro: Returns the ARN of the latest AWS LayerVersion available, based on a Layer ARN.'
+      CodeUri: ./
+      Handler: main
+      Runtime: go1.x
+      MemorySize: 128
+      Timeout: 6
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - lambda:ListLayerVersions
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:lambda:*:${AWS::AccountId}:layer:*'
+  Macro:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      FunctionName: !Ref MacroFunction
+      Name: !Ref MacroName
+      Description: !Sub 'The "${MacroName}" returns the ARN of the latest AWS LayerVersion available, based on a LayerVersion name or LayerVersion ARN.'
